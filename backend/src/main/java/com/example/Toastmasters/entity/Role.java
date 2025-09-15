@@ -1,0 +1,24 @@
+package com.example.Toastmasters.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
+@Table(name = "role")
+public class Role {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // <- auto-increment
+    private Long roleId;
+
+    @Column(nullable = false,unique = true)
+    private String roleName;
+
+    @Column(nullable = false)
+    private String roleDescription;
+}
