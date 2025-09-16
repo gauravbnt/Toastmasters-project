@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Users, Calendar, FileText, Shield, LogOut, User } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { meetingService } from '../../services/meetingService'
-import toast from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import Swal from 'sweetalert2'
+import { Home, Users, Calendar, Settings, LogOut, User, Menu, X, FileText, Shield } from 'lucide-react'
 import ConfirmationModal from '../common/ConfirmationModal'
 
 const Navbar = () => {
@@ -12,7 +11,8 @@ const Navbar = () => {
   const navigate = useNavigate()
   const { user, logout } = useAuth() || {}
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
   // Check if the current route matches the given path
   const isActive = (path) => {
     return location.pathname === path || location.pathname.startsWith(`${path}/`)
@@ -88,6 +88,19 @@ const Navbar = () => {
                   <span>{label}</span>
                 </Link>
               ))}
+              
+              {/* Meetings Link for Members */}
+              {user?.role === 'MEMBER' && (
+                <Link
+                  to="/member-meetings"
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    isActive('/member-meetings') ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <Calendar size={18} />
+                  <span>Meetings</span>
+                </Link>
+              )}
             </div>
           </div>
           

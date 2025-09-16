@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import MemberDashboard from './pages/MemberDashboard';
 import MemberProfile from './pages/MemberProfile';
+import MemberMeetings from './pages/MemberMeetings';
 import Members from './pages/Members';
 import MemberForm from './components/members/MemberForm';
 import MemberList from './components/members/MemberList';
@@ -140,6 +141,11 @@ const AppContent = () => {
           <Route path="/member-profile" element={
             <ProtectedRoute allowedRoles={['MEMBER']}>
               <MemberProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/member-meetings" element={
+            <ProtectedRoute allowedRoles={['MEMBER']}>
+              <MemberMeetings />
             </ProtectedRoute>
           } />
 
