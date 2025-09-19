@@ -15,8 +15,8 @@ public class LoginServiceImpl implements LoginService {
     private AddMemberRepository memberRepository;
 
     // Hardcoded admin credentials
-    private static final String ADMIN_EMAIL = "admin@toastmasters.com";
-    private static final String ADMIN_PASSWORD = "admin123";
+    private static final String ADMIN_EMAIL = "admin@gmail.com";
+    private static final String ADMIN_PASSWORD = "admin";
 
     @Override
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {

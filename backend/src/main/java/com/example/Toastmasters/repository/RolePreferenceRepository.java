@@ -12,4 +12,6 @@ public interface RolePreferenceRepository extends JpaRepository<RolePreference, 
     Optional<RolePreference> findTopByMemberIdAndMeetingIdOrderByCreatedAtAsc(Long memberId, Long meetingId);
 
     List<RolePreference> findByMeetingId(Long meetingId);
+
+    List<RolePreference> findAllByMemberIdAndMeetingId(Long memberId, Long meetingId);
 }

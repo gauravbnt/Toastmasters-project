@@ -17,4 +17,6 @@ public interface MemberAvailabilityRepository extends JpaRepository<MemberAvaila
 
 
     Optional<MemberAvailability> findByMemberIdAndMeetingId(Long memberId, Long meetingId);
+
+    List<MemberAvailability> findAllByMeetingId(Long meetingId);
 }
