@@ -4,8 +4,14 @@ export const memberRoleAssignService = {
   // Get role assignments for a specific meeting
   getAssignmentsByMeeting: async (meetingId) => {
     try {
+      // Validate meeting ID
+      if (!meetingId || meetingId === 'undefined' || meetingId === 'null') {
+        console.warn('Invalid meeting ID provided:', meetingId)
+        return []
+      }
+      
       console.log(`Fetching role assignments for meeting ${meetingId}...`)
-      const response = await api.get(`/member-role-assign/meeting/${meetingId}`)
+      const response = await api.get(`/role-assign/meeting/${meetingId}`)
       console.log('Role assignments response:', response.data)
       return Array.isArray(response.data) ? response.data : []
     } catch (error) {
@@ -18,7 +24,7 @@ export const memberRoleAssignService = {
   getAssignmentsByMember: async (memberId) => {
     try {
       console.log(`Fetching role assignments for member ${memberId}...`)
-      const response = await api.get(`/member-role-assign/member/${memberId}`)
+      const response = await api.get(`/role-assign/member/${memberId}`)
       console.log('Member role assignments response:', response.data)
       return Array.isArray(response.data) ? response.data : []
     } catch (error) {
@@ -31,7 +37,7 @@ export const memberRoleAssignService = {
   assignRoles: async (assignmentData) => {
     try {
       console.log('Assigning roles:', assignmentData)
-      const response = await api.post('/member-role-assign/assign', assignmentData)
+      const response = await api.post('/role-assign/assign', assignmentData)
       console.log('Role assignment response:', response.data)
       return response.data
     } catch (error) {
@@ -75,6 +81,32 @@ export const memberRoleAssignService = {
       return Array.isArray(response.data) ? response.data : []
     } catch (error) {
       console.error('Error fetching all assignments:', error)
+      return []
+    }
+  },
+
+  // Get all meetings for role assignment
+  getAllMeetings: async () => {
+    try {
+      console.log('Fetching all meetings for role assignment...')
+      const response = await api.get('/meetings/all')
+      console.log('Meetings response:', response.data)
+      return Array.isArray(response.data) ? response.data : []
+    } catch (error) {
+      console.error('Error fetching meetings:', error)
+      return []
+    }
+  },
+
+  // Get all roles for role assignment
+  getAllRoles: async () => {
+    try {
+      console.log('Fetching all roles for role assignment...')
+      const response = await api.get('/roles/all')
+      console.log('Roles response:', response.data)
+      return Array.isArray(response.data) ? response.data : []
+    } catch (error) {
+      console.error('Error fetching roles:', error)
       return []
     }
   }

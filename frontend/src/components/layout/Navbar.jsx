@@ -52,7 +52,6 @@ const Navbar = () => {
     { path: '/members', label: 'Members', icon: Users },
     { path: '/meetings', label: 'Meetings', icon: Calendar },
     { path: '/agenda', label: 'Agenda', icon: FileText },
-    { path: '/roles', label: 'Roles', icon: Shield },
     { path: '/role-assignment', label: 'Role Assignment', icon: Users },
   ]
 

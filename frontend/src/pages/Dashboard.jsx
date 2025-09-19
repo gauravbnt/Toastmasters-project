@@ -17,6 +17,7 @@ const Dashboard = () => {
   })
   const [loading, setLoading] = useState(true)
   const [todaysMeetings, setTodaysMeetings] = useState([])
+  const [upcomingMeetings, setUpcomingMeetings] = useState([])
   const [activeMembers, setActiveMembers] = useState([])
   const [showActiveMembers, setShowActiveMembers] = useState(false)
   const navigate = useNavigate()
@@ -60,6 +61,7 @@ const Dashboard = () => {
       })
 
       setTodaysMeetings(todaysData)
+      setUpcomingMeetings(upcomingMeetings)
     } catch (error) {
       console.error('Dashboard fetch error:', error)
       toast.error('Failed to fetch dashboard data')
@@ -260,6 +262,73 @@ const Dashboard = () => {
                     </span>
                     <Clock size={16} className="text-yellow-600" />
                     <span className="text-sm font-medium text-yellow-600">Today</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Upcoming Meetings with Role Assignment */}
+        {upcomingMeetings.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="card"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Upcoming Meetings</h2>
+              <span className="text-sm text-gray-500">{upcomingMeetings.length} meetings</span>
+            </div>
+            <div className="space-y-3">
+              {upcomingMeetings.map((meeting) => (
+                <div
+                  key={meeting.meetingId}
+                  className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900">{meeting.meetingTitle || meeting.title}</h3>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                      <span className="flex items-center">
+                        <Calendar size={14} className="mr-1" />
+                        {new Date(meeting.date).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                      <span className="flex items-center">
+                        <Clock size={14} className="mr-1" />
+                        {`${meeting.startTime || ''}${meeting.startTime && meeting.endTime ? ' - ' : ''}${meeting.endTime || ''}`}
+                      </span>
+                      {meeting.location && (
+                        <span className="flex items-center">
+                          <Users size={14} className="mr-1" />
+                          {meeting.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        (meeting.meetingType === 'REGULAR' && 'bg-blue-100 text-blue-800') ||
+                        (meeting.meetingType === 'CONTEST' && 'bg-red-100 text-red-800') ||
+                        (meeting.meetingType === 'SPECIAL' && 'bg-purple-100 text-purple-800') ||
+                        'bg-gray-100 text-gray-800'
+                      }`}
+                      title={meeting.meetingType}
+                    >
+                      {meeting.meetingType}
+                    </span>
+                    <button
+                      onClick={() => navigate(`/admin/role-assignment/${meeting.meetingId}`)}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                    >
+                      <Users className="h-3 w-3 mr-1" />
+                      Assign Roles
+                    </button>
                   </div>
                 </div>
               ))}

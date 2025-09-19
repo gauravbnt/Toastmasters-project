@@ -4,12 +4,10 @@ import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Star, Award, BarCha
 import { useAuth } from '../context/AuthContext'
 import { meetingService } from '../services/meetingService'
 import { roleService } from '../services/roleService'
-import { rolePreferenceService } from '../services/rolePreferenceService'
+import { memberRoleAssignService } from '../services/memberRoleAssignService'
 import memberAvailabilityService from '../services/memberAvailabilityService'
-import memberRoleService from '../services/memberRoleService'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import { showWarning, showSuccess, showError } from '../utils/alerts'
-import toast from 'react-hot-toast';
+import { showWarning, showSuccess, showError } from '../utils/alerts';
 
 const MemberDashboard = () => {
   const { user } = useAuth() || {}
@@ -17,8 +15,8 @@ const MemberDashboard = () => {
 
   const [meetings, setMeetings] = useState([])
   const [myAvailability, setMyAvailability] = useState({})
+  const [upcomingRoles, setUpcomingRoles] = useState([])
   const [rolePreferences, setRolePreferences] = useState({})
-  const [roles, setRoles] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [savingFor, setSavingFor] = useState(null)
@@ -37,30 +35,31 @@ const MemberDashboard = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
-        const [meetingsResponse, availabilityResponse, rolesResponse] = 
+        const [meetingsResponse, availabilityResponse, upcomingRolesResponse] = 
           await Promise.allSettled([
             meetingService.getUpcomingMeetings(),
             memberAvailabilityService.getMemberAvailability(memberId),
-            roleService.getAllRoles()
-          ])
-        
-        setMeetings(meetingsResponse.status === 'fulfilled' ? meetingsResponse.value.data : [])
-        setMyAvailability(availabilityResponse.status === 'fulfilled' ? availabilityResponse.value.data : {})
-        setRoles(rolesResponse.status === 'fulfilled' ? rolesResponse.value.data : [])
+            memberRoleAssignService.getAssignmentsByMember(memberId)
+          ]);
+
+        setMeetings(meetingsResponse.status === 'fulfilled' ? meetingsResponse.value.data : []);
+        setMyAvailability(availabilityResponse.status === 'fulfilled' ? availabilityResponse.value.data : {});
+        setUpcomingRoles(upcomingRolesResponse.status === 'fulfilled' ? upcomingRolesResponse.value.data : []);
+
       } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-        setError('Failed to load some dashboard data. Please try again later.')
+        console.error('Error fetching dashboard data:', error);
+        setError('Failed to load some dashboard data. Please try again later.');
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
-    
+    };
+
     if (memberId) {
-      fetchData()
+      fetchData();
     }
-  }, [memberId])
+  }, [memberId]);
 
   const handleAvailabilityChange = async (meetingId, status) => {
     // Example of using showWarning
@@ -171,13 +170,45 @@ const MemberDashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <Calendar className="w-8 h-8 text-blue-500 mr-3" />
             <div>
               <p className="text-2xl font-bold text-gray-900">{meetings?.length || 0}</p>
               <p className="text-sm text-gray-600">Upcoming Meetings</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center">
+            <Award className="w-8 h-8 text-green-500 mr-3" />
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{upcomingRoles?.length || 0}</p>
+              <p className="text-sm text-gray-600">Total Assignments</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center">
+            <Clock className="w-8 h-8 text-orange-500 mr-3" />
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{upcomingRoles?.length || 0}</p>
+              <p className="text-sm text-gray-600">Upcoming Roles</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center">
+            <User className="w-8 h-8 text-purple-500 mr-3" />
+            <div>
+              <p className="text-2xl font-bold text-gray-900">
+                {upcomingRoles && upcomingRoles.length > 0 ? 'Multiple' : 0}
+              </p>
+              <p className="text-sm text-gray-600">Different Roles</p>
             </div>
           </div>
         </div>
@@ -192,7 +223,7 @@ const MemberDashboard = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Upcoming Meetings</h2>
           
-          {!meetings || meetings.length === 0 ? (
+          {(!meetings || meetings.length === 0) ? (
             <div className="text-center py-12">
               <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Upcoming Meetings</h3>
@@ -262,7 +293,7 @@ const MemberDashboard = () => {
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {currentRolePreferences.map((roleId, index) => {
-                              const role = roles?.find((r) => r.roleId === roleId);
+                              const role = roles.find((r) => r.roleId === roleId);
                               return (
                                 <div
                                   key={roleId}
@@ -300,6 +331,35 @@ const MemberDashboard = () => {
         </div>
       </motion.div>
 
+      {/* Upcoming Role Assignments - single instance */}
+      {upcomingRoles && upcomingRoles.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+        >
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Your Upcoming Role Assignments</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {upcomingRoles.map((assignment) => (
+              <div key={assignment.id} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="font-medium text-gray-900">{assignment.roleName}</h4>
+                    <p className="text-sm text-gray-600 mt-1">Meeting ID: {assignment.meetingId}</p>
+                    {assignment.slotIndex && (
+                      <p className="text-sm text-gray-500">Slot: {assignment.slotIndex}</p>
+                    )}
+                  </div>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    Assigned
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

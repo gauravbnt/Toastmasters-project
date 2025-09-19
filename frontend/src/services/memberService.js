@@ -41,22 +41,15 @@ export const memberService = {
     return response.data
   },
 
-  // Get active members with fallback to client-side filtering
+  // Get active members using client-side filtering
   getActiveMembers: async () => {
     try {
-      try {
-        // First try the dedicated endpoint if it exists
-        const response = await api.get('/members/active');
-        if (Array.isArray(response.data)) {
-          return response.data;
-        }
-      } catch (endpointError) {
-        console.log('Falling back to client-side filtering of active members');
-        // If endpoint doesn't exist, get all members and filter
-        const allMembers = await memberService.getAllMembers();
-        return allMembers.filter(member => member.isActive === true);
-      }
-      return []; // Fallback return if no data returned
+      console.log('Fetching active members...');
+      // Get all members and filter for active ones
+      const allMembers = await memberService.getAllMembers();
+      const activeMembers = allMembers.filter(member => member.isActive === true);
+      console.log(`Found ${activeMembers.length} active members out of ${allMembers.length} total members`);
+      return activeMembers;
     } catch (error) {
       console.error('Error fetching active members:', error);
       toast.error('Failed to load active members');

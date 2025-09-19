@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { memberRoleAssignService } from '../../services/memberRoleAssignService'
 import { memberService } from '../../services/memberService'
+import { memberAvailabilityService } from '../../services/memberAvailabilityService'
+import { rolePreferenceService } from '../../services/rolePreferenceService'
 import { toast } from 'react-hot-toast'
 
 const RoleAssignment = () => {
@@ -9,6 +11,8 @@ const RoleAssignment = () => {
   const [roles, setRoles] = useState([])
   const [selectedMeeting, setSelectedMeeting] = useState('')
   const [assignments, setAssignments] = useState([])
+  const [availableMembers, setAvailableMembers] = useState([])
+  const [memberPreferences, setMemberPreferences] = useState({})
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -44,17 +48,44 @@ const RoleAssignment = () => {
 
   useEffect(() => {
     if (selectedMeeting) {
-      fetchMeetingAssignments()
+      fetchMeetingData()
     }
   }, [selectedMeeting])
 
-  const fetchMeetingAssignments = async () => {
+  const fetchMeetingData = async () => {
+    setLoading(true)
     try {
-      const assignmentsData = await memberRoleAssignService.getAssignmentsByMeeting(selectedMeeting)
+      // Fetch assignments, available members, and role preferences in parallel
+      const [assignmentsData, memberStatuses, preferencesData] = await Promise.all([
+        memberRoleAssignService.getAssignmentsByMeeting(selectedMeeting),
+        memberAvailabilityService.getMemberStatuses(selectedMeeting),
+        rolePreferenceService.getMeetingRolePreferences(selectedMeeting)
+      ])
+
       setAssignments(assignmentsData)
+      
+      // Set available members (only those with AVAILABLE status)
+      setAvailableMembers(memberStatuses.AVAILABLE || [])
+      
+      // Process role preferences into a member_id -> preferences map
+      const preferencesMap = {}
+      if (Array.isArray(preferencesData)) {
+        preferencesData.forEach(pref => {
+          if (!preferencesMap[pref.memberId]) {
+            preferencesMap[pref.memberId] = []
+          }
+          preferencesMap[pref.memberId].push(pref)
+        })
+      }
+      setMemberPreferences(preferencesMap)
+      
     } catch (error) {
-      console.error('Error fetching meeting assignments:', error)
+      console.error('Error fetching meeting data:', error)
       setAssignments([])
+      setAvailableMembers([])
+      setMemberPreferences({})
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -84,10 +115,19 @@ const RoleAssignment = () => {
     })
   }
 
-  const getMemberRolePreference = (member) => {
-    // This would ideally come from member preferences endpoint
-    // For now, we'll use a simple logic or return null
-    return member.preferredRole || null
+  // Get available roles for assignment (excluding already assigned roles)
+  const getAvailableRoles = () => {
+    const assignedRoleIds = assignments.map(a => a.roleId)
+    return roles.filter(role => !assignedRoleIds.includes(role.id))
+  }
+
+  const getMemberRolePreference = (memberId) => {
+    const preferences = memberPreferences[memberId]
+    if (preferences && preferences.length > 0) {
+      // Return the first (highest priority) preference
+      return preferences[0].roleId
+    }
+    return null
   }
 
   const getAssignedRole = (memberId) => {
@@ -111,7 +151,7 @@ const RoleAssignment = () => {
       toast.success('Role assignments saved successfully!')
       
       // Refresh assignments
-      await fetchMeetingAssignments()
+      await fetchMeetingData()
     } catch (error) {
       toast.error('Failed to save role assignments')
       console.error('Error saving assignments:', error)
@@ -202,24 +242,25 @@ const RoleAssignment = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {members.map(member => {
-                const preferredRole = getMemberRolePreference(member)
-                const assignedRoleId = getAssignedRole(member.id)
+              {availableMembers.map(member => {
+                const preferredRole = getMemberRolePreference(member.memberId)
+                const assignedRoleId = getAssignedRole(member.memberId)
+                const availableRoles = getAvailableRoles()
                 
                 return (
-                  <tr key={member.id} className="hover:bg-gray-50">
+                  <tr key={member.memberId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
                             <span className="text-indigo-600 font-medium">
-                              {getMemberName(member).charAt(0).toUpperCase()}
+                              {member.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {getMemberName(member)}
+                            {member.name}
                           </div>
                           <div className="text-sm text-gray-500">
                             {member.email}
@@ -239,11 +280,12 @@ const RoleAssignment = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select
                         value={assignedRoleId || ''}
-                        onChange={(e) => handleRoleAssignment(member.id, e.target.value ? parseInt(e.target.value) : null)}
+                        onChange={(e) => handleRoleAssignment(member.memberId, e.target.value ? parseInt(e.target.value) : null)}
                         className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        disabled={assignedRoleId} // Disable if already assigned
                       >
                         <option value="">Select Role</option>
-                        {roles.map(role => (
+                        {availableRoles.map(role => (
                           <option key={role.id} value={role.id}>
                             {role.name}
                           </option>
@@ -253,7 +295,7 @@ const RoleAssignment = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {assignedRoleId && (
                         <button
-                          onClick={() => handleRoleAssignment(member.id, null)}
+                          onClick={() => handleRoleAssignment(member.memberId, null)}
                           className="text-red-600 hover:text-red-900"
                         >
                           Remove
@@ -267,9 +309,9 @@ const RoleAssignment = () => {
           </table>
         </div>
 
-        {members.length === 0 && (
+        {availableMembers.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No members available for role assignment</p>
+            <p className="text-gray-500">No members have marked availability for this meeting</p>
           </div>
         )}
       </div>
@@ -280,7 +322,7 @@ const RoleAssignment = () => {
           <h4 className="text-lg font-medium text-gray-900 mb-3">Assignment Summary</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {assignments.map(assignment => {
-              const member = members.find(m => m.id === assignment.memberId)
+              const member = availableMembers.find(m => m.memberId === assignment.memberId)
               const role = roles.find(r => r.id === assignment.roleId)
               
               return (
@@ -288,13 +330,13 @@ const RoleAssignment = () => {
                   <div className="flex-shrink-0">
                     <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
                       <span className="text-indigo-600 text-sm font-medium">
-                        {member ? getMemberName(member).charAt(0).toUpperCase() : '?'}
+                        {member ? member.name.charAt(0).toUpperCase() : '?'}
                       </span>
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {member ? getMemberName(member) : 'Unknown Member'}
+                      {member ? member.name : 'Unknown Member'}
                     </p>
                     <p className="text-sm text-gray-500 truncate">
                       {role ? role.name : 'Unknown Role'}

@@ -9,12 +9,21 @@ export const meetingService = {
 
   // Get meeting by ID
   getMeetingById: async (id) => {
+    // Validate input
+    if (!id) {
+      throw new Error('No meeting ID provided');
+    }
+    
+    console.log(`getMeetingById called with ID: ${id}, Type: ${typeof id}`);
+    
     // Ensure ID is a number
     const numericId = Number(id);
     if (isNaN(numericId)) {
-      throw new Error('Invalid meeting ID');
+      console.error(`Failed to convert meeting ID to number: ${id}`);
+      throw new Error(`Invalid meeting ID: ${id} (cannot convert to number)`);
     }
-    console.log(`Fetching meeting with ID: ${numericId}`);
+    
+    console.log(`Fetching meeting with numeric ID: ${numericId}`);
     const response = await api.get(`/meetings/${numericId}`);
     console.log('Meeting API response:', JSON.stringify(response.data, null, 2));
     return response.data;
